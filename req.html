@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Request Barang - Staff</title>
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (XLSX) Library -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { background-color: #eef2f5; font-size: 0.82rem; }
+        
+        /* --- SPLASH SCREEN FULL LAYAR --- */
+        #splashScreen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #198754, #146c43);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        #splashScreen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .splash-icon {
+            font-size: 4.5rem;
+            animation: bounce 1.5s infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-15px);}
+            60% {transform: translateY(-8px);}
+        }
+
+        .mobile-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, #198754, #146c43);
+            color: white;
+            padding: 16px 20px;
+            text-align: center;
+        }
+        .app-header h4 { font-size: 1.15rem; font-weight: 700; margin-bottom: 2px; }
+        .app-header p { font-size: 0.75rem; opacity: 0.85; margin-bottom: 8px; }
+
+        .form-label { font-size: 0.78rem; font-weight: 600; margin-bottom: 2px; }
+        .form-control, .form-select { font-size: 0.8rem; padding: 6px 10px; border-radius: 8px; }
+        .btn { font-size: 0.8rem; padding: 6px 14px; border-radius: 8px; }
+
+        .table-excel th {
+            background-color: #f1f3f5;
+            color: #495057;
+            border-bottom: 2px solid #ced4da;
+            font-size: 0.73rem;
+            text-transform: uppercase;
+            padding: 6px;
+        }
+        .table-excel td { font-size: 0.76rem; vertical-align: middle; color: #212529; padding: 4px 6px !important; }
+        .table-container { max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; }
+        
+        .item-row {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-menu-wrapper {
+            padding: 25px 20px;
+            background: #ffffff;
+            text-align: center;
+        }
+        .dashboard-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .icon-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+        .icon-menu-card {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease-in-out;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .icon-menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 15px rgba(25, 135, 84, 0.15);
+            border-color: #198754;
+            background: #ffffff;
+        }
+        .icon-menu-card i {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .icon-menu-card span {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #334155;
+            display: block;
+        }
+
+        .btn-back-menu {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 50rem;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-back-menu:hover { background: rgba(255,255,255,0.35); }
+
+        .connection-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 50rem;
+            background-color: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-dot.connecting { background-color: #ffc107; }
+        .status-dot.connected { background-color: #ffffff; box-shadow: 0 0 6px #ffffff; }
+        .status-dot.error { background-color: #dc3545; }
+
+        .modal-content { border-radius: 16px; border: none; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <!-- SPLASH SCREEN FULL LAYAR -->
+    <div id="splashScreen">
+        <div class="splash-icon">
+            <i class="fas fa-boxes-stacked"></i>
+        </div>
+        <h3 class="fw-bold mb-1">Request Barang Staff</h3>
+        <p class="text-white-50 mb-4">Sistem Permintaan Gudang</p>
+        <div class="spinner-border text-light" role="status"></div>
+    </div>
+
+    <div class="mobile-container">
+        
+        <!-- HEADER -->
+        <div class="app-header d-flex justify-content-between align-items-center">
+            <div id="headerBackBtn" style="visibility: hidden;">
+                <button class="btn-back-menu" onclick="kembaliKeMenuUtama()">
+                    <i class="fas fa-arrow-left me-1"></i> Menu
+                </button>
+            </div>
+            <div class="text-center flex-grow-1">
+                <h4><i class="fas fa-share-from-square me-2"></i>Form Request Staff</h4>
+                <p id="headerSubtitle" class="mb-1">Pilih menu di bawah untuk mengajukan permintaan</p>
+                <div id="connectionStatus" class="connection-indicator">
+                    <span class="status-dot connecting" id="statusDot"></span>
+                    <span id="statusText">Menghubungkan...</span>
+                </div>
+            </div>
+            <div style="visibility: hidden;">
+                <button class="btn-back-menu">Menu</button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD GRID IKON MENU -->
+        <div id="dashboardMenu" class="dashboard-menu-wrapper">
+            <div class="dashboard-title"><i class="fas fa-th-large me-1"></i> Menu Utama Staff</div>
+            <div class="icon-menu-grid">
+                <div class="icon-menu-card" onclick="bukaHalaman('menu-stok', 'Daftar Stok Barang Gudang', 'menu-stok-tab')">
+                    <i class="fas fa-boxes-stacked text-primary"></i>
+                    <span>Daftar Stok</span>
+                </div>
+                <div class="icon-menu-card" onclick="bukaHalaman('menu-form', 'Form Input Permintaan Barang', 'menu-form-tab')">
+                    <i class="fas fa-pen-to-square text-success"></i>
+                    <span>Input Request</span>
+                </div>
+                <div class="icon-menu-card" onclick="bukaHalaman('menu-riwayat', 'Riwayat Pengajuan Request', 'menu-riwayat-tab')">
+                    <i class="fas fa-table-list text-info"></i>
+                    <span>Riwayat Request</span>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-pills d-none" id="pills-tab" role="tablist">
+            <li class="nav-item"><button class="nav-link" id="menu-stok-tab" data-bs-toggle="pill" data-bs-target="#menu-stok" type="button"></button></li>
+            <li class="nav-item"><button class="nav-link" id="menu-form-tab" data-bs-toggle="pill" data-bs-target="#menu-form" type="button"></button></li>
+            <li class="nav-item"><button class="nav-link" id="menu-riwayat-tab" data-bs-toggle="pill" data-bs-target="#menu-riwayat" type="button"></button></li>
+        </ul>
+
+        <div class="tab-content p-3" id="pills-tabContent" style="display: none;">
+            
+            <!-- TAB 0: DAFTAR STOK -->
+            <div class="tab-pane fade" id="menu-stok" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 bg-light">
+                    <div class="card-header bg-dark text-white py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="fs-7 fw-semibold">Stok Tersedia di Gudang</span>
+                        </div>
+                        <div class="input-group" style="width: 160px;">
+                            <input type="text" id="inputPencarianStok" class="form-control form-control-sm py-1" placeholder="Cari..." onkeyup="filterStok()">
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-container table-responsive">
+                            <table class="table table-bordered table-hover table-excel align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center" width="6%">No</th>
+                                        <th>Nama Barang</th>
+                                        <th class="text-center" width="22%">Jumlah Stok</th>
+                                        <th width="20%">Satuan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="barisDataStok">
+                                    <tr><td colspan="4" class="text-center text-muted py-3">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2 text-muted fs-8 px-1 text-center">
+                            <span class="text-danger">*Mode tampilan (Hanya dapat dilihat)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: FORM REQUEST -->
+            <div class="tab-pane fade" id="menu-form" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 bg-light">
+                    <div class="card-body p-3">
+                        <form id="formRequestStaff" onsubmit="handleRequestBarang(event)">
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <label for="tanggal" class="form-label">Tanggal Request <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="tanggal" required>
+                                </div>
+                                <div class="col-6">
+                                    <label for="requestor" class="form-label">Peminta / Dept <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="requestor" placeholder="Contoh: Budi - Produksi" required>
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold text-success mb-0"><i class="fas fa-boxes me-1"></i> Daftar Barang</label>
+                                <button type="button" class="btn btn-outline-success btn-sm py-1 px-2" onclick="tambahBarisItem()">
+                                    <i class="fas fa-plus me-1"></i> Tambah Barang
+                                </button>
+                            </div>
+
+                            <div id="containerItemBarang">
+                                <div class="item-row" id="row-0">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-7">
+                                            <label class="form-label">Nama Barang <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control nama-barang-input" placeholder="Nama barang" required>
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label">QTY <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control qty-input" min="1" placeholder="Jumlah" required>
+                                        </div>
+                                        <div class="col-1 text-end">
+                                            <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2" style="visibility: hidden;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                <button type="reset" class="btn btn-outline-secondary px-3" onclick="resetFormCustom()"><i class="fas fa-undo me-1"></i> Reset</button>
+                                <button type="submit" class="btn btn-success px-3" id="btnSimpan">
+                                    <span id="btnSimpanText"><i class="fas fa-paper-plane me-1"></i> Kirim Semua Request</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: RIWAYAT -->
+            <div class="tab-pane fade" id="menu-riwayat" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 bg-light">
+                    <div class="card-header bg-dark text-white py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="fs-7 fw-semibold">Riwayat Request</span>
+                        </div>
+                        <div class="input-group" style="width: 160px;">
+                            <input type="text" id="inputPencarian" class="form-control form-control-sm py-1" placeholder="Cari..." onkeyup="filterTabel()">
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-container table-responsive">
+                            <table class="table table-bordered table-hover table-excel align-middle mb-0" id="tabelRiwayat">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center" width="6%">No</th>
+                                        <th width="20%">Tanggal</th>
+                                        <th>Nama Barang</th>
+                                        <th class="text-center" width="16%">QTY</th>
+                                        <th width="25%">Requestor</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="barisDataRiwayat">
+                                    <tr><td colspan="5" class="text-center text-muted py-3">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 text-muted fs-8 px-1">
+                            <span></span>
+                            <span>Firebase DB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL ALERT -->
+    <div class="modal fade" id="androidModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content p-2">
+                <div class="modal-header py-1">
+                    <h6 class="modal-title fw-bold text-success" id="androidModalTitle"><i class="fas fa-info-circle me-1"></i>Informasi</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-2">
+                    <p id="androidModalMessage" class="mb-0 text-secondary fs-8">Pesan...</p>
+                </div>
+                <div class="modal-footer pt-0 pb-1">
+                    <button type="button" class="btn btn-success btn-sm rounded-pill px-3" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- FIREBASE LOGIC & SPLASH -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                if (splash) {
+                    splash.classList.add('fade-out');
+                    setTimeout(() => splash.remove(), 600);
+                }
+            }, 1500);
+        });
+
+        // GANTI DENGAN KONFIGURASI FIREBASE ANDA
+        const firebaseConfig = {
+            apiKey: "MASUKKAN_API_KEY_ANDA",
+            authDomain: "MASUKKAN_AUTH_DOMAIN_ANDA",
+            databaseURL: "MASUKKAN_DATABASE_URL_ANDA",
+            projectId: "MASUKKAN_PROJECT_ID_ANDA",
+            storageBucket: "MASUKKAN_STORAGE_BUCKET_ANDA",
+            messagingSenderId: "MASUKKAN_MESSAGING_SENDER_ID_ANDA",
+            appId: "MASUKKAN_APP_ID_ANDA"
+        };
+
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        function updateConnectionStatus(status, message) {
+            statusDot.className = 'status-dot ' + status;
+            statusText.textContent = message;
+        }
+
+        window.bukaHalaman = function(tabTargetId, subtitleText, tabTriggerId) {
+            document.getElementById('dashboardMenu').style.display = 'none';
+            document.getElementById('pills-tabContent').style.display = 'block';
+            document.getElementById('headerBackBtn').style.visibility = 'visible';
+            document.getElementById('headerSubtitle').textContent = subtitleText;
+
+            const triggerEl = document.getElementById(tabTriggerId);
+            if (triggerEl) {
+                const tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
+        };
+
+        window.kembaliKeMenuUtama = function() {
+            document.getElementById('pills-tabContent').style.display = 'none';
+            document.getElementById('dashboardMenu').style.display = 'block';
+            document.getElementById('headerBackBtn').style.visibility = 'hidden';
+            document.getElementById('headerSubtitle').textContent = 'Pilih menu di bawah untuk mengajukan permintaan';
+        };
+
+        window.showAndroidAlert = function(title, message, isError = false) {
+            document.getElementById('androidModalTitle').innerHTML = isError ? 
+                '<i class="fas fa-exclamation-circle me-1 text-danger"></i>Perhatian' : 
+                '<i class="fas fa-check-circle me-1 text-success"></i>Sukses';
+            document.getElementById('androidModalMessage').textContent = message;
+            const modal = new bootstrap.Modal(document.getElementById('androidModal'));
+            modal.show();
+        };
+
+        let rowIndexCounter = 0;
+
+        window.tambahBarisItem = function() {
+            rowIndexCounter++;
+            const container = document.getElementById('containerItemBarang');
+            const newRow = document.createElement('div');
+            newRow.className = 'item-row';
+            newRow.id = `row-${rowIndexCounter}`;
+            newRow.innerHTML = `
+                <div class="row g-2 align-items-end">
+                    <div class="col-7">
+                        <label class="form-label">Nama Barang <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control nama-barang-input" placeholder="Nama barang" required>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">QTY <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control qty-input" min="1" placeholder="Jumlah" required>
+                    </div>
+                    <div class="col-1 text-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2" onclick="hapusBarisItem('row-${rowIndexCounter}')" title="Hapus baris">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newRow);
+        };
+
+        window.hapusBarisItem = function(rowId) {
+            const rowEl = document.getElementById(rowId);
+            if (rowEl) rowEl.remove();
+        };
+
+        window.resetFormCustom = function() {
+            document.getElementById('formRequestStaff').reset();
+            document.getElementById('tanggal').valueAsDate = new Date();
+            const container = document.getElementById('containerItemBarang');
+            container.innerHTML = `
+                <div class="item-row" id="row-0">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-7">
+                            <label class="form-label">Nama Barang <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control nama-barang-input" placeholder="Nama barang" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">QTY <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control qty-input" min="1" placeholder="Jumlah" required>
+                        </div>
+                        <div class="col-1 text-end">
+                            <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2" style="visibility: hidden;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            rowIndexCounter = 0;
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+            updateConnectionStatus('connected', 'Terhubung');
+            document.getElementById('tanggal').valueAsDate = new Date();
+
+            let dataRiwayat = [];
+            let dataStokGlobal = [];
+
+            const refStok = query(ref(db, 'stok_barang'), orderByChild('namaBarang'));
+            onValue(refStok, (snapshot) => {
+                dataStokGlobal = [];
+                snapshot.forEach((child) => { dataStokGlobal.push({ id: child.key, ...child.val() }); });
+                renderStokTabel(dataStokGlobal);
+            });
+
+            window.renderStokTabel = function(data) {
+                const tbody = document.getElementById('barisDataStok');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Tidak ada data stok di gudang.</td></tr>`;
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-center text-muted fw-bold">${index + 1}</td>
+                        <td><strong>${item.namaBarang}</strong></td>
+                        <td class="text-center fw-bold ${item.jumlah <= 5 ? 'text-danger' : 'text-primary'}">${Number(item.jumlah).toLocaleString()}</td>
+                        <td><span class="text-uppercase">${item.satuan}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            };
+
+            window.filterStok = function() {
+                const kw = document.getElementById('inputPencarianStok').value.toLowerCase();
+                const filtered = dataStokGlobal.filter(i => i.namaBarang.toLowerCase().includes(kw));
+                renderStokTabel(filtered);
+            };
+
+            window.handleRequestBarang = async function(event) {
+                event.preventDefault();
+                const btn = document.getElementById('btnSimpan');
+                const btnText = document.getElementById('btnSimpanText');
+                
+                const tanggalVal = document.getElementById('tanggal').value;
+                const requestorVal = document.getElementById('requestor').value.trim();
+
+                const namaBarangInputs = document.querySelectorAll('.nama-barang-input');
+                const qtyInputs = document.querySelectorAll('.qty-input');
+
+                btn.disabled = true;
+                btnText.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Mengirim...';
+
+                try {
+                    const dbRef = ref(db, 'barang_keluar');
+                    const timestampBase = Date.now();
+
+                    for (let i = 0; i < namaBarangInputs.length; i++) {
+                        const namaBarang = namaBarangInputs[i].value.trim();
+                        const qty = Number(qtyInputs[i].value);
+
+                        if (namaBarang && qty > 0) {
+                            await push(dbRef, {
+                                tanggal: tanggalVal,
+                                requestor: requestorVal,
+                                namaBarang: namaBarang,
+                                qty: qty,
+                                createdAt: timestampBase + i
+                            });
+                        }
+                    }
+
+                    showAndroidAlert("Berhasil", "Semua request barang berhasil dikirim ke Gudang!");
+                    resetFormCustom();
+                } catch (error) {
+                    showAndroidAlert("Gagal", error.message, true);
+                } finally {
+                    btn.disabled = false;
+                    btnText.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Kirim Semua Request';
+                }
+            };
+
+            const dbRef = query(ref(db, 'barang_keluar'), orderByChild('createdAt'));
+            onValue(dbRef, (snapshot) => {
+                dataRiwayat = [];
+                snapshot.forEach((child) => { dataRiwayat.push({ id: child.key, ...child.val() }); });
+                dataRiwayat.reverse();
+                renderTabel(dataRiwayat);
+            });
+
+            window.renderTabel = function(data) {
+                const tbody = document.getElementById('barisDataRiwayat');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Belum ada request.</td></tr>`;
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-center text-muted fw-bold">${index + 1}</td>
+                        <td>${item.tanggal}</td>
+                        <td><strong>${item.namaBarang}</strong></td>
+                        <td class="text-center fw-bold text-success">${Number(item.qty).toLocaleString()}</td>
+                        <td>${item.requestor}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            };
+
+            window.filterTabel = function() {
+                const kw = document.getElementById('inputPencarian').value.toLowerCase();
+                const filtered = dataRiwayat.filter(i => 
+                    i.namaBarang.toLowerCase().includes(kw) || i.requestor.toLowerCase().includes(kw)
+                );
+                renderTabel(filtered);
+            };
+
+        } catch (e) {
+            updateConnectionStatus('error', 'Gagal Koneksi');
+        }
+    </script>
+</body>
+</html>
